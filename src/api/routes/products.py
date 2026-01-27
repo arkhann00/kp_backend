@@ -25,4 +25,3 @@ async def add_product_image(session: SessionDep, product_id:int,image_file:Uploa
     image_url = await save_product_image(file=image_file)
     await update_image_url(session=session,product_id=product_id,image_url=image_url)
     return "SUCCESS"
-    
