@@ -1,10 +1,22 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from src.api.schemas.user import UserCreate
 from src.models.user import User
 from src.db.repositories.products import get_products_by_ids
 
 
 async def create_user(session: AsyncSession, new_user_schema: UserCreate):
+    # ✅ Сначала проверяем - может пользователь уже есть?
+    result = await session.execute(
+        select(User).where(User.telegram_id == new_user_schema.telegram_id)
+    )
+    existing_user = result.scalar_one_or_none()
+    
+    # Если пользователь уже есть - возвращаем его
+    if existing_user:
+        return existing_user
+    
+    # Если нет - создаём нового
     new_user_model = User(
         telegram_id=new_user_schema.telegram_id,
         username=new_user_schema.username,
@@ -25,7 +37,7 @@ async def add_favorite_product(session: AsyncSession, user_id: int, favorite_pro
     if not user:
         raise ValueError("User not found")
     
-    # ✅ Проверяем что товар ещё не в избранном
+    # Проверяем что товар ещё не в избранном
     if favorite_product_id not in user.favorite_product_ids:
         user.favorite_product_ids.append(favorite_product_id)
         await session.commit()
@@ -34,15 +46,12 @@ async def add_favorite_product(session: AsyncSession, user_id: int, favorite_pro
     return user
 
 
-# ✅ ИСПРАВЛЕНО: удаляем product_id, а не user_id
 async def remove_favorite_product(session: AsyncSession, user_id: int, favorite_product_id: int):
     user = await session.get(User, user_id)
     
     if not user:
         raise ValueError("User not found")
     
-    # ✅ БЫЛО: user.favorite_product_ids.remove(user_id) - ОШИБКА!
-    # ✅ СТАЛО: удаляем product_id
     if favorite_product_id in user.favorite_product_ids:
         user.favorite_product_ids.remove(favorite_product_id)
         await session.commit()
