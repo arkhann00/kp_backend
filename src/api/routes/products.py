@@ -1,27 +1,59 @@
-from fastapi import APIRouter, File, UploadFile
-from src.api.schemas.product import ProductSchema
-
-from src.db.repositories.products import (create_product_db, get_products_db, update_image_url)
+from fastapi import APIRouter, Query
+from pydantic import BaseModel
+from src.api.schemas.user import UserCreate
+from src.db.repositories.user import (
+    create_user, 
+    add_favorite_product, 
+    remove_favorite_product, 
+    get_favorite_products_for_user
+)
 from src.dependencies import SessionDep
-from src.utils import save_product_image
-
 
 router = APIRouter()
 
-@router.get("/products")
-async def get_products(session_dep: SessionDep):
-    return await get_products_db(session=session_dep)
-     
-@router.post("/products")
-async def create_product(session_dep: SessionDep, new_product:ProductSchema):
-    return await create_product_db(session= session_dep,new_product=new_product)
-    
-@router.get("/products/{product_id}")
-async def get_product(session: SessionDep):
-    ...
+# ✅ Схема для body запроса
+class FavoriteRequest(BaseModel):
+    user_id: int
+    product_id: int
 
-@router.post("/products/{product_id}/image")
-async def add_product_image(session: SessionDep, product_id:int,image_file:UploadFile = File(...)):
-    image_url = await save_product_image(file=image_file)
-    await update_image_url(session=session,product_id=product_id,image_url=image_url)
-    return "SUCCESS"
+@router.post("/user")
+async def register_user(new_user: UserCreate, session_dep: SessionDep):
+    user = await create_user(session=session_dep, new_user_schema=new_user)
+    return {"status": "success", "user_id": user.id}
+
+# ✅ ИСПРАВЛЕНО: принимаем данные из body
+@router.put("/user/favorite")
+async def update_favorite_product(
+    favorite: FavoriteRequest,
+    session_dep: SessionDep
+):
+    await add_favorite_product(
+        session=session_dep, 
+        user_id=favorite.user_id, 
+        favorite_product_id=favorite.product_id
+    )
+    return {"status": "success"}
+
+# ✅ ИСПРАВЛЕНО: принимаем данные из body
+@router.delete("/user/favorite")
+async def delete_favorite_product(
+    favorite: FavoriteRequest,
+    session_dep: SessionDep
+):
+    await remove_favorite_product(
+        session=session_dep, 
+        user_id=favorite.user_id, 
+        favorite_product_id=favorite.product_id
+    )
+    return {"status": "success"}
+
+# GET запрос - параметры в URL остаются
+@router.get("/user/favorite")
+async def get_favorites(
+    session_dep: SessionDep,
+    user_id: int = Query(...)
+):
+    return await get_favorite_products_for_user(
+        session=session_dep, 
+        user_id=user_id
+    )
