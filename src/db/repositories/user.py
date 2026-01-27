@@ -6,17 +6,16 @@ from src.db.repositories.products import get_products_by_ids
 
 
 async def create_user(session: AsyncSession, new_user_schema: UserCreate):
-    # ✅ Сначала проверяем - может пользователь уже есть?
+    # Проверяем - может пользователь уже есть?
     result = await session.execute(
         select(User).where(User.telegram_id == new_user_schema.telegram_id)
     )
     existing_user = result.scalar_one_or_none()
     
-    # Если пользователь уже есть - возвращаем его
     if existing_user:
         return existing_user
     
-    # Если нет - создаём нового
+    # Создаём нового
     new_user_model = User(
         telegram_id=new_user_schema.telegram_id,
         username=new_user_schema.username,
@@ -31,8 +30,12 @@ async def create_user(session: AsyncSession, new_user_schema: UserCreate):
     return new_user_model
 
 
-async def add_favorite_product(session: AsyncSession, user_id: int, favorite_product_id: int):
-    user = await session.get(User, user_id)
+# ✅ ИСПРАВЛЕНО: ищем по telegram_id
+async def add_favorite_product(session: AsyncSession, telegram_id: str, favorite_product_id: int):
+    result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = result.scalar_one_or_none()
     
     if not user:
         raise ValueError("User not found")
@@ -46,8 +49,12 @@ async def add_favorite_product(session: AsyncSession, user_id: int, favorite_pro
     return user
 
 
-async def remove_favorite_product(session: AsyncSession, user_id: int, favorite_product_id: int):
-    user = await session.get(User, user_id)
+# ✅ ИСПРАВЛЕНО: ищем по telegram_id
+async def remove_favorite_product(session: AsyncSession, telegram_id: str, favorite_product_id: int):
+    result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = result.scalar_one_or_none()
     
     if not user:
         raise ValueError("User not found")
@@ -60,8 +67,12 @@ async def remove_favorite_product(session: AsyncSession, user_id: int, favorite_
     return user
 
 
-async def get_favorite_products_for_user(session: AsyncSession, user_id: int):
-    user = await session.get(User, user_id)
+# ✅ ИСПРАВЛЕНО: ищем по telegram_id
+async def get_favorite_products_for_user(session: AsyncSession, telegram_id: str):
+    result = await session.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = result.scalar_one_or_none()
     
     if not user:
         return []

@@ -11,17 +11,16 @@ from src.dependencies import SessionDep
 
 router = APIRouter()
 
-# ✅ Схема для body запроса
 class FavoriteRequest(BaseModel):
-    user_id: int
+    user_id: str  # ✅ Теперь это telegram_id (строка)
     product_id: int
 
 @router.post("/user")
 async def register_user(new_user: UserCreate, session_dep: SessionDep):
     user = await create_user(session=session_dep, new_user_schema=new_user)
-    return {"status": "success", "user_id": user.id}
+    return {"status": "success", "user_id": user.telegram_id}  # ✅ Возвращаем telegram_id
 
-# ✅ ИСПРАВЛЕНО: принимаем данные из body
+# ✅ Принимаем telegram_id как строку
 @router.put("/user/favorite")
 async def update_favorite_product(
     favorite: FavoriteRequest,
@@ -29,12 +28,11 @@ async def update_favorite_product(
 ):
     await add_favorite_product(
         session=session_dep, 
-        user_id=favorite.user_id, 
+        telegram_id=favorite.user_id,  # ✅ Передаём telegram_id
         favorite_product_id=favorite.product_id
     )
     return {"status": "success"}
 
-# ✅ ИСПРАВЛЕНО: принимаем данные из body
 @router.delete("/user/favorite")
 async def delete_favorite_product(
     favorite: FavoriteRequest,
@@ -42,18 +40,18 @@ async def delete_favorite_product(
 ):
     await remove_favorite_product(
         session=session_dep, 
-        user_id=favorite.user_id, 
+        telegram_id=favorite.user_id,  # ✅ Передаём telegram_id
         favorite_product_id=favorite.product_id
     )
     return {"status": "success"}
 
-# GET запрос - параметры в URL остаются
+# ✅ Принимаем telegram_id через Query
 @router.get("/user/favorite")
 async def get_favorites(
     session_dep: SessionDep,
-    user_id: int = Query(...)
+    user_id: str = Query(...)  # ✅ Теперь строка
 ):
     return await get_favorite_products_for_user(
         session=session_dep, 
-        user_id=user_id
+        telegram_id=user_id
     )
