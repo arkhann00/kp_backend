@@ -44,3 +44,6 @@ async def get_products_by_ids(session:AsyncSession, product_ids:list[int]):
         select(Product).where(Product.id.in_(product_ids))
     )
     return result.scalars().all()
+
+async def remove_product(product_id: int):
+    ...
