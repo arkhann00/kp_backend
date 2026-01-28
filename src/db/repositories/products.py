@@ -45,5 +45,9 @@ async def get_products_by_ids(session:AsyncSession, product_ids:list[int]):
     )
     return result.scalars().all()
 
-async def remove_product(product_id: int):
-    ...
+async def remove_product(product_id: int, session: AsyncSession):
+    product = session.get(Product, product_id)
+    await session.delete(product)
+    await session.commit()
+    
+    return "OK"
