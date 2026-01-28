@@ -26,6 +26,8 @@ async def add_product_image(session: SessionDep, product_id:int,image_file:Uploa
     await update_image_url(session=session,product_id=product_id,image_url=image_url)
     return "SUCCESS"
 
-@router.delete("/product/{product_id}")
-async def delete_product(product_id:int):
-    await remove_product(product_id=product_id)
+@router.delete("/products/{product_id}")
+async def delete_product(session: SessionDep, product_id: int):
+    """Удалить товар по ID"""
+    result = await remove_product(product_id=product_id, session=session)
+    return {"message": "Product deleted successfully", "id": product_id}

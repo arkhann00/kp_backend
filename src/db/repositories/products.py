@@ -1,3 +1,5 @@
+import os
+from fastapi import HTTPException
 from sqlalchemy import select
 from src.models.product import Product
 from src.api.schemas.product import ProductSchema
@@ -46,8 +48,34 @@ async def get_products_by_ids(session:AsyncSession, product_ids:list[int]):
     return result.scalars().all()
 
 async def remove_product(product_id: int, session: AsyncSession):
-    product = session.get(Product, product_id)
+    """Удаляет товар и его изображение"""
+    
+    # ✅ Получаем товар из БД
+    result = await session.execute(
+        select(Product).where(Product.id == product_id)
+    )
+    product = result.scalar_one_or_none()
+    
+    # ✅ Проверяем что товар существует
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # ✅ Удаляем файл изображения если он есть
+    if product.image_url:
+        try:
+            # Получаем путь к файлу из URL
+            # Например: "/uploads/products/image.jpg" -> "uploads/products/image.jpg"
+            file_path = product.image_url.lstrip("/")
+            
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"✅ Удалено изображение: {file_path}")
+        except Exception as e:
+            print(f"⚠️ Ошибка удаления изображения: {e}")
+            # Продолжаем удаление товара даже если не удалось удалить файл
+    
+    # ✅ Удаляем товар из БД
     await session.delete(product)
     await session.commit()
     
-    return "OK"
+    return {"status": "success", "deleted_id": product_id}
