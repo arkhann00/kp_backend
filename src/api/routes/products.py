@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile
 from src.api.schemas.product import ProductSchema
 
-from src.db.repositories.products import (create_product_db, get_products_db, update_image_url, remove_product)
+from src.db.repositories.products import (create_product_db, get_products_db, update_image_url, remove_product, get_all_cotegories)
 from src.dependencies import SessionDep
 from src.utils import save_product_image
 
@@ -31,3 +31,8 @@ async def delete_product(session: SessionDep, product_id: int):
     """Удалить товар по ID"""
     result = await remove_product(product_id=product_id, session=session)
     return {"message": "Product deleted successfully", "id": product_id}
+
+@router.get("/products/categories")
+async def get_categories(session: SessionDep) -> list[str]:
+    categories = get_all_cotegories(session=session)
+    return categories

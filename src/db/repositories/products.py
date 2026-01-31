@@ -79,3 +79,12 @@ async def remove_product(product_id: int, session: AsyncSession):
     await session.commit()
     
     return {"status": "success", "deleted_id": product_id}
+
+
+async def get_all_cotegories(session: AsyncSession):
+    result = await session.execute(select(Product))
+    products = result.scalars().all()
+    categories_set = set()
+    for product in products:
+        categories_set.add(product.category)
+    return list(categories_set)
